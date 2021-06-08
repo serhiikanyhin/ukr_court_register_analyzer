@@ -1,6 +1,6 @@
 import math
 import pandas as pd
-from sqlalchemy import create_engine, Column, String, Integer, LargeBinary, ForeignKey
+from sqlalchemy import create_engine, Column, String, Integer, LargeBinary, Float, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -94,6 +94,34 @@ class MetadataCsvFile(database):
     csv_binary = Column(LargeBinary)
 
 
+class StopWord(database):
+    __tablename__ = 'stop_words'
+    word_id = Column(Integer, primary_key=True)
+    word_text = Column(String)
+
+
+class DocumentWord(database):
+    __tablename__ = 'documents_words'
+    word_id = Column(Integer, primary_key=True)
+    doc_id = Column(Integer, ForeignKey('documents.doc_id'))
+    doc_year = Column(Integer)
+    word_par_num = Column(Integer)
+    word_text = Column(String)
+
+
+class Vocabulary(database):
+    __tablename__ = 'vocabulary'
+    word_id = Column(Integer, primary_key=True)
+    word_text = Column(String)
+
+
+class SimGroup(database):
+    __tablename__ = 'similarity_groups'
+    doc_group_id = Column(Integer, primary_key=True)
+    group_id = Column(Integer)
+    doc_id = Column(Integer, ForeignKey('documents.doc_id'))
+    word_par_num = Column(Integer)
+
 # READ FUNCTIONS
 
 
@@ -118,7 +146,38 @@ def read_csv(file_name, year):
     return csv_bytes
 
 
+def read_doc_links(year):
+    doc_links = [(i.doc_id, i.doc_url, i.doc_year) for i in session.query(Document).filter_by(doc_year=year)]
+    return doc_links
+
+
+def read_stop_words():
+    stop_words = [i.word_text for i in session.query(StopWord)]
+    return stop_words
+
+
 # INSERT MANY
+
+
+def insert_many_sim_groups(records):
+    for rec_chunk in [records[i:i + DB_CH_SIZE] for i in range(0, len(records), DB_CH_SIZE)]:
+        session.bulk_insert_mappings(SimGroup, rec_chunk)
+        session.commit()
+
+
+def insert_vocabulary(words):
+    session.bulk_insert_mappings(Vocabulary, words)
+    session.commit()
+
+
+def insert_many_doc_words(records):
+    session.bulk_insert_mappings(DocumentWord, records)
+    session.commit()
+
+
+def update_many_doc_paragraphs(records):
+    session.bulk_update_mappings(Document, records)
+    session.commit()
 
 
 def insert_many_documents(df):
@@ -314,6 +373,18 @@ def put_metadata_csv_file(year, name, csv_bytes):
         chunk = MetadataCsvFile(csv_binary=chunk, csv_year=year, csv_name=name, csv_chunk_num=num)
         session.add(chunk)
         session.commit()
+
+
+def put_stop_words(word):
+    stop_word = session.query(StopWord).filter_by(word_text=word).first()
+    if not stop_word:
+        stop_word = StopWord(
+            word_text=word
+        )
+        session.add(stop_word)
+    else:
+        stop_word.word_text = word
+    session.commit()
 
 
 # Support functions
