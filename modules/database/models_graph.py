@@ -2,7 +2,7 @@ from neo4j import GraphDatabase
 import time
 
 
-driver = GraphDatabase.driver("neo4j://localhost:7687", auth=("neo4j", "qwer1234"))
+driver = GraphDatabase.driver("neo4j://localhost:7687", auth=("neo4j", "xxxx"))
 session = driver.session()
 ADD_CH_SIZE = 1000
 
