@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 
-db_string = "postgresql://postgres:netishin33606@localhost:5432/database"
+db_string = "postgresql://postgres:xxxx@localhost:5432/database"
 db = create_engine(db_string)
 database = declarative_base()
 FILE_CH_SIZE = 52428800  # number of bytes in 50 megabytes
